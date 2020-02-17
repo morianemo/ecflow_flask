@@ -11,9 +11,9 @@ Flask-SocketIO==2.9.3
 gevent==1.2.2
 greenlet==0.4.13
 itsdangerous==0.24
-Jinja2==2.10
+Jinja2==2.10.1
 MarkupSafe==1.0
-python-engineio==2.0.2
+python-engineio==3,9,0
 python-socketio==1.8.4
 pytz==2017.3
 singledispatch==3.4.0.3
