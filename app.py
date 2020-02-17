@@ -4,7 +4,6 @@
   started with django framework                201502
   shifted to Flask, if it can make it lighter  201504
 """
-from __future__ import print_function    # (at top of module)
 from gevent import monkey
 monkey.patch_all()
 
@@ -66,7 +65,7 @@ def process(item, depth=0, count=0):
     elif isinstance(item, ec.Client):
         NOW = int(time.strftime('%H%M%S', time.gmtime()))
         ident = "%s:%s" % (item.get_host(), item.get_port())
-        if ident not in CLIENTS.keys():
+        if ident not in list(CLIENTS.keys()):
             CLIENTS[ident] = NOW
             item.sync_local()
             # cache.set('mdef', item.get_defs())
@@ -192,7 +191,7 @@ rpat = "^(?P<nick>[a-zA-Z0-9\-_@:\.]+)[ \t]+(?P<host>[a-zA-Z0-9\-_]+)[ \t]+(?P<p
 
 def init_servers():
     recp = re.compile(rpat)
-    for key in servers.keys():
+    for key in list(servers.keys()):
         try:
             with open(servers[key][0], 'r') as fid:
                 try:
@@ -429,9 +428,9 @@ COMPRESS = 0
 
 def display_dispatch(request, dct, var=None):
     # print(request.path, dct.keys(), var)
-    for key, item in dct.items():
+    for key, item in list(dct.items()):
         if DJANGO:
-            if "path_info" not in request.__dict__.keys():
+            if "path_info" not in list(request.__dict__.keys()):
                 continue
             elif key in request.path_info:
                 if not item:
@@ -461,7 +460,7 @@ class Command(object):
         self.var["port"] = "31415"
 
         if type(var) is dict:
-            for key in var.keys():
+            for key in list(var.keys()):
                 self.var[key] = var[key]
 
     def server(self, sep=':'):  # aka contact
@@ -503,7 +502,7 @@ class Servers(Command):
         super(Servers, self).response(request)
 
         select_servers = "<select name='server'>\n"
-        for nick in sched.servers().keys():
+        for nick in list(sched.servers().keys()):
             item = sched.servers()[nick]
             select_servers += "<option value='%s:%s'" % (item['host'],
                                                          item['port'])
@@ -577,7 +576,7 @@ class ServersT(Servers):
         context['jsondata'] = "\"" + url + "\""
         context['json_url'] = url
 
-        if "suite" in self.var.keys():
+        if "suite" in list(self.var.keys()):
             context['json_times'] = sched.resturl(
                 contact(self.var, '/') + "/suite/times/%s" % self.var['suite'])
         else:
@@ -602,7 +601,7 @@ class ServersJson(Servers):
         super(ServersJson, self).response(request)
         kids = []
         num = 0
-        for key, item in sched.servers().items():
+        for key, item in list(sched.servers().items()):
             num += 1
             kids.append({
                 'name': key,
@@ -627,7 +626,7 @@ class ServersJPing(Servers):
     def response(self, request):
         kids = []
         num = 0
-        for key, item in sched.servers().items():
+        for key, item in list(sched.servers().items()):
             num += 1
             kids.append({
                 'name': key,
@@ -808,7 +807,7 @@ class SuiteT(Suite):
         context['json_times'] = sched.resturl(
             contact(self.var, '/') + "/suite/times/%s" % self.var['suite'])
         context['items'] = []
-        for key in DSUITES.keys():
+        for key in list(DSUITES.keys()):
             context['items'].append({
                 "key": key,
                 "href": request.path.replace(kind, key)})
@@ -965,7 +964,7 @@ def process(request, *args, **kwargs):
         "users": "--ch_suites",
     }
 
-    for key, cmd in translate.items():
+    for key, cmd in list(translate.items()):
         if key in var["kind"]:
             if cmd is None:
                 continue
@@ -1046,7 +1045,7 @@ class GenericScheduler(object):
                     req = req.path
 
         except:
-            dct.keys()
+            list(dct.keys())
         self.req = req
 
     def load_list(self):
@@ -1111,13 +1110,13 @@ class JobTimes(object):
                 if "." in path:
                     raise
 
-                if path not in memo.keys():
+                if path not in list(memo.keys()):
                     memo[path] = dict()
 
                 kind = "curr"
                 if ".old" in ffp:
                     kind = "prev"
-                if kind not in memo[path].keys():
+                if kind not in list(memo[path].keys()):
                     memo[path][kind] = dict()
 
                 if file.endswith(".orig"):
@@ -1152,7 +1151,7 @@ class EcflowScheduler(GenericScheduler):
     def client(self, key):
         if len(self.clients) == 0:
             self.clients[key] = ec.Client(key)
-        elif key not in self.clients.keys():
+        elif key not in list(self.clients.keys()):
             self.clients[key] = ec.Client(key)
         return self.clients[key]
 
@@ -1220,7 +1219,7 @@ class EcflowScheduler(GenericScheduler):
         for item in res:
             name, val = item.split(" ")
             paths[val] = ""
-        for val in paths.keys():
+        for val in list(paths.keys()):
             out.append(JobTimes(val + path).memo)
 
         pickle.dump(val + path, output)
@@ -1258,7 +1257,7 @@ class EcflowScheduler(GenericScheduler):
     def json(self, var):
         import def2json
         import gzip
-        import cStringIO
+        from io import StringIO ## for Python 3
         clt = self.client(contact(var))
 
         items = (("suite", "jonas"),
@@ -1266,14 +1265,14 @@ class EcflowScheduler(GenericScheduler):
                  ("fia", "all"),
                  ("depth", "5"))
         for key, val in items:
-            if key not in var.keys():
+            if key not in list(var.keys()):
                 var[key] = val
 
         res = "json"
         tree = None
         try:
             name = "_all_"
-            if 'suite' in var.keys():
+            if 'suite' in list(var.keys()):
                 name = var["suite"]
             if name != "_all_":
                 clt.ch_register(False, [name, ])
@@ -1378,7 +1377,7 @@ class SMSScheduler(GenericScheduler):
             SMSScheduler.init = 1
         else:
             pass
-        if key not in self.clients.keys():
+        if key not in list(self.clients.keys()):
             self.clients[key] = SMSClient(key)
         return self.clients[key]
 
@@ -1549,7 +1548,7 @@ class ProcessURLV1(ProcessURL):
     def proc(self, *args, **kwargs):
         super(ProcessURLV1, self).proc(args, kwargs)
         url = self.url
-        for num in xrange(len(URL)):
+        for num in range(len(URL)):
             item = str(url[num])
             if num >= len(url):
                 break
@@ -1628,7 +1627,7 @@ def get_disp(request):
         if DJANGO:
             if disp in request.path_info:
                 break
-            elif disp in parse_qs(request.META['QUERY_STRING']).keys():
+            elif disp in list(parse_qs(request.META['QUERY_STRING']).keys()):
                 break
         elif disp in request.path:
             break  # FLASK
@@ -1670,7 +1669,7 @@ def get_client_output(clt, command="--ping"):
     return res
 
 
-DISPLAYS = sorted(DSUITE.keys())
+DISPLAYS = sorted(list(DSUITE.keys()))
 SLEEP_INTERVAL = 15
 
 

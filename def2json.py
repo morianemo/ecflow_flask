@@ -45,7 +45,7 @@ class ListVarUse(object):
             item = self.defs.find_abs_node(str(xxx))
             self.add(item)
             self.process(item=item)
-            print xxx, path, self.memo
+            print((xxx, path, self.memo))
             return self.report()
 
         elif item is None:
@@ -81,7 +81,7 @@ def cleaner(dct):
     if not isinstance(dct, dict):
         return dct
     return dict((k, cleaner(v))
-                for k, v in dct.iteritems()
+                for k, v in list(dct.items())
                 if v is not None)
 
 
@@ -319,7 +319,7 @@ def tostatuses(filt):
         filt = "RASPQCU"  # aka all
 
     res = []
-    for key, val in STATUSES.items():
+    for key, val in list(STATUSES.items()) :
         if filt is None:
             res.append(val)
         elif key in filt:
@@ -336,7 +336,7 @@ class TreeD3JS(Tree):
     def __init__(self, node, fis=None, fia=None, depth=10):
         super(TreeD3JS, self).__init__(node, attr=0)
         self.name = self._name()
-        if "_kids" in self.__dict__.keys():
+        if "_kids" in list(self.__dict__.keys()):
             del self._kids
         self.size = 1
         self.kind = self._kind()
