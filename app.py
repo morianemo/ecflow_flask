@@ -14,15 +14,15 @@ import re
 from subprocess import Popen, PIPE
 from threading import Thread
 from flask import Flask, render_template, session, request
-from flask.ext.socketio import SocketIO, emit, join_room, leave_room, \
+from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, disconnect
-from flask.ext.cache import Cache
+from flask_cache import Cache
 
 from subprocess import Popen, PIPE
 from threading import Thread
 from flask import Flask, render_template, session, request, Markup, flash
-from flask.ext.socketio import SocketIO, emit
-from flask.ext import restful
+from flask_socketio import SocketIO, emit
+import flask_restful as restful
 from flask_cors import CORS
 from cgi import parse_qs
 import jinja2 as dt
