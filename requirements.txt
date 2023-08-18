@@ -1,6 +1,6 @@
 aniso8601==2.0.0
 backports-abc==0.5
-certifi==2018.1.18
+certifi==2023.7.22
 click==6.7
 Flask==2.2.5
 Flask-Cache==0.13.1
