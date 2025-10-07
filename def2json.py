@@ -1,7 +1,7 @@
 import re
 import json
 import sys
-sys.path.append('/usr/local/apps/ecflow/current/lib/python2.7/site-packages/')
+sys.path.append('/usr/local/apps/ecflow/current/lib/python3.9/site-packages/')
 import ecflow as ec
 
 pattern = "^[ ]*(?P<kind>[\w])[ \t]*(?P<content>[\w]+)?$"

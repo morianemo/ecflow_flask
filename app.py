@@ -16,15 +16,16 @@ from threading import Thread
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, disconnect
-from flask_cache import Cache
-
+from werkzeug.utils import import_string
+from flask_caching import Cache
+from urllib.parse import parse_qs
+from markupsafe import Markup
 from subprocess import Popen, PIPE
 from threading import Thread
-from flask import Flask, render_template, session, request, Markup, flash
+from flask import Flask, render_template, session, request, flash
 from flask_socketio import SocketIO, emit
 import flask_restful as restful
 from flask_cors import CORS
-from cgi import parse_qs
 import jinja2 as dt
 import json
 import sys
@@ -457,7 +458,7 @@ class Command(object):
     def __init__(self, var=None):
         self.var = dict()
         self.var["host"] = "localhost"
-        self.var["port"] = "31415"
+        self.var["port"] = "3141"
 
         if type(var) is dict:
             for key in list(var.keys()):
