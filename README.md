@@ -8,6 +8,10 @@ pip install -r requirements.txt
 python app.py
 
 firefox localhost:5003
+
+export FLASK_ENV=development
+flask run
+
 ```
 
 * servers files to be found in
