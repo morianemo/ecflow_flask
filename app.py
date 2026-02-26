@@ -5,8 +5,7 @@
   shifted to Flask, if it can make it lighter  201504
 """
 from gevent import monkey
-monkey.patch_all()
-
+# monkey.patch_all()
 import time
 import datetime
 import os
@@ -16,44 +15,58 @@ from threading import Thread
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, disconnect
-from flask_cache import Cache
-
+from werkzeug.utils import import_string
+from flask_caching import Cache
+from urllib.parse import parse_qs
+from markupsafe import Markup
 from subprocess import Popen, PIPE
 from threading import Thread
-from flask import Flask, render_template, session, request, Markup, flash
-from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, session, request, flash
 import flask_restful as restful
 from flask_cors import CORS
-from cgi import parse_qs
+from flask_cors import cross_origin
 import jinja2 as dt
 import json
 import sys
-ecf_py = '/usr/local/apps/ecflow/current/lib/python2.7/site-packages/'
-# ecf_py)
-sys.path.append('/usr/local/apps/ecflow/current/lib/python2.7/site-packages/')
-try:
-    import ecflow as ec
-except ImportError:
-    sys.path.append('/usr/local/lib/python2.7/site-packages')
-    import ecflow as ec
+# Thanks!
+# https://requests-oauthlib.readthedocs.org/en/latest/
+# from requests_oauthlib import OAuth2Session
+from flask import Flask, request, redirect, session, url_for
+from flask.json import jsonify
+import ecflow as ec
+import logging
+from datetime import datetime
 
+# Configuration des logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
+)
+
+
+def validate_suite_name(name):
+    if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+        abort(400, description="Invalid suite name")
+        
 SLEEP_INTERVAL = 120
 DEBUG = 0
-
-app = Flask(__name__)
-app.debug = True
-app.config['SECRET_KEY'] = 'secret!'
 ns = '/ecflow'
 
-socketio = SocketIO(app)
 thread = None
 thread2 = None
 NOW = time.gmtime()
-cache = Cache(app, config={'CACHE_TYPE': 'simple', })
-# cache.init_app(app)
+# cache = Cache()
+
+def create_app():
+    app = Flask(__name__, static_folder='./static')    
+    # cache.init_app(app, config={'CACHE_TYPE': 'SimpleCache', })
+    # app.debug = True
+    # app.config['SECRET_KEY'] = 'secret!'
+    return app
+app = create_app()
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 CLIENTS = dict()
-# cache.set('mdef', None)
 
 
 def process(item, depth=0, count=0):
@@ -214,7 +227,7 @@ def background_thread():
     global NOW
     count = 0
     eode = ec.Client("%s:%s" % (os.getenv("ECF_HOST", "localhost"),
-                                os.getenv("ECF_PORT", "2500")))
+                                os.getenv("ECF_PORT", "3141")))
     while True:
         count += 1
         NOW = time.gmtime()
@@ -244,7 +257,7 @@ def updater(tree, iid, name, value):
 
 
 @app.route('/')
-@cache.cached(timeout=60)
+# @cache.cached(timeout=60)
 def index():
     global thread
     if thread is None:
@@ -325,12 +338,6 @@ def test_ecflow_connect():
 def test_disconnect():
     print('Client disconnected')
 
-# Thanks!
-# https://requests-oauthlib.readthedocs.org/en/latest/
-# from requests_oauthlib import OAuth2Session
-from flask import Flask, request, redirect, session, url_for
-from flask.json import jsonify
-
 
 @app.route("/login")
 def login():
@@ -357,15 +364,16 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'secret!'
 app.config['CORS_HEADERS'] = 'Content-Type'
-cors = CORS(app, resource={r'/api/ecflow/': {"origins": "*"}})
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+cors = CORS(app)  # , resource={r'/api/ecflow/': {"origins": "*"}})
 api = restful.Api(app)
 ns = '/ecflow'
 
-socketio = SocketIO(app)
+# socketio = SocketIO(app)
 thread = None
 
 import platform
-PORT = 5003
+PORT = 5000
 # HOST = platform.node() + ".ecmwf.int:%d" % PORT
 HOST = "localhost:%d" % PORT
 APPE = "http://%s/api/ecflow/" % HOST
@@ -442,7 +450,7 @@ def display_dispatch(request, dct, var=None):
 
 
 def contact(client, sep=':'):
-    res = "localhost%c31415" % sep
+    res = "localhost%c3141" % sep
     if isinstance(client, dict):
         if "localhost" == str(client['host']):
             client['host'] = "localhost"
@@ -457,7 +465,7 @@ class Command(object):
     def __init__(self, var=None):
         self.var = dict()
         self.var["host"] = "localhost"
-        self.var["port"] = "31415"
+        self.var["port"] = "3141"
 
         if type(var) is dict:
             for key in list(var.keys()):
@@ -479,7 +487,7 @@ form_template = """<!DOCTYPE html>
 <meta http-equiv=”refresh” content=”60" >
 <meta charset="utf-8">
         <!-- jQuery should be at least version 1.7 -->
-        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script src="/static/assets/contextmenu.js"></script> 
         <link rel="stylesheet" type="text/css" href="/static/assets/contextmenu.css" />
 
@@ -528,10 +536,10 @@ class Servers(Command):
         body += TOP + "servers/treemap" + br
 
         TOP = "url syntax: " + APPH
-        body += TOP + "%s/%s/<b>show</b>" % (red("localhost"), red("2500")) + br
+        body += TOP + "%s/%s/<b>show</b>" % (red("localhost"), red("3141")) + br
 
         body += TOP + "%s/%s/suite/%s/<b>display/statuses/attributes/depth</b><br/>" % (
-            red("localhost"), red("2500"), red("test"))
+            red("localhost"), red("3141"), red("test"))
         body += br + "<b>show</b>:" + \
             " ".join(SERVER_CMD) + ", suite name may be _all_"
         body += br + "<b>display</b>:" + " ".join(DISPLAYS)
@@ -986,7 +994,7 @@ form_templateX = """<!DOCTYPE html>
 <meta http-equiv=”refresh” content=”60" >
 <meta charset="utf-8">
         <!-- jQuery should be at least version 1.7 -->
-        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script src="/static/assets/contextmenu.js"></script> 
         <link rel="stylesheet" type="text/css" href="/static/assets/contextmenu.css" />
 
@@ -1009,7 +1017,7 @@ form_templateY = """</div>
         </div>
 <!-- initially hidden right-click menu -->
 <!--div class="hide" id="rmenu">
-<ul><li> <a href="http://www.google.com">Google</a>    
+<ul><li> <a href="https://www.google.com">Google</a>    
 </li><li> <a href="http://%s/login">Localhost</a>
 </li><li> <a href="C:\">C</a></li></ul> </div-->
 </body>
@@ -1050,7 +1058,9 @@ class GenericScheduler(object):
 
     def load_list(self):
         if not self.servers_list:
-            raise
+            self.serv["localhost"] = {'host': "localhost",
+                               'port': 3141, }
+            return
         with open(self.servers_list, 'r') as servers_file:
             for line in servers_file:
                 if line[0] == '#': continue
@@ -1145,6 +1155,7 @@ class EcflowScheduler(GenericScheduler):
         super(EcflowScheduler, self).__init__()
         self.name = "ecflow"
         self.servers_list = "/usr/local/apps/ecflow/current/share/ecflow/servers"
+        if not os.path.isfile(self.servers_list): self.servers_list = None
         self.rest = APPE
         # self.rest += self.name
 
@@ -1366,6 +1377,7 @@ class SMSScheduler(GenericScheduler):
         super(SMSScheduler, self).__init__()
         self.name = "sms"
         self.servers_list = "/usr/local/apps/sms/lib/servers"
+        if not os.path.isfile(self.servers_list): self.servers_list = None        
         # self.rest += self.name
         self.rest = APPS
 
@@ -1509,7 +1521,7 @@ class ProcessURL(object):
     def __init__(self, url="/"):
         self.url = url.split('/')
         self.var = {"host": "localhost",
-                    "port": "31415",
+                    "port": "3141",
                     "kind": "servers",
                     "suite": "_all_",
                     "path": "/",
@@ -1675,29 +1687,70 @@ SLEEP_INTERVAL = 15
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
+# @cache.cached(timeout=120) # seconds
 def index_node_port(ecflow="ecflow",
-                    host="localhost", port="31415", path='/'):
+                    host="localhost", port="3141", path='/'):
     return process(request, {"kind": ecflow, "host": host, "port": port, })
 
 
 @app.route('/api/ecflow/servers')
-def index_servers(ecflow="ecflow", host="localhost", port="31415"):
+# @cache.cached(timeout=120) # seconds
+def index_servers(ecflow="ecflow", host="localhost", port="3141"):
     return process(request, {"kind": ecflow, "host": host, "port": port, })
 
 
 @app.route('/api/ecflow/servers/json')
-def index_servers_json(ecflow="ecflow", host="localhost", port="31415"):
+def index_servers_json(ecflow="ecflow", host="localhost", port="3141"):
     return ServersJson().response(request)
 
 
 @app.route('/api/sms/servers')
-def index_sms_servers(ecflow="sms", host="localhost", port="31415"):
+# @cache.cached(timeout=120) # seconds
+def index_sms_servers(ecflow="sms", host="localhost", port="3141"):
     return process(request, {"kind": ecflow, "host": host, "port": port, })
 
 
 @app.route('/api/sms/servers/json')
-def index_sms_servers_json(ecflow="sms", host="localhost", port="31415"):
+# @cache.cached(timeout=120) # seconds
+def index_sms_servers_json(ecflow="sms", host="localhost", port="3141"):
     return ServersJson().response(request)
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
+
+@app.before_request
+def log_request():
+    logging.info(f"{request.method} {request.path}")
+
+    
+@app.route('/api/suites')
+@cross_origin()  # Autorise CORS pour cette route spécifique
+def get_suites():
+    # suites = parse_def_to_json("votre_fichier.def")
+    return jsonify(suites)
+
+# Configuration détaillée
+CORS(app,
+     origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:%s" % PORT],     
+     # origins=["*"],
+     methods=["GET", "POST", "PUT", "DELETE"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
+
+
+# Gestion des fichiers manquants
+def get_suite_data(suite_name):
+    try:
+        with open(f'suites/{suite_name}.def') as f:
+            return parse_def_to_json(f.read())
+    except FileNotFoundError:
+        abort(404, description="Suite not found")
 
 
 if __name__ == '__main__':
