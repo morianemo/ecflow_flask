@@ -14,7 +14,7 @@ itsdangerous==0.24
 Jinja2==3.1.4
 MarkupSafe==1.0
 python-engineio==4.13.2
-python-socketio==1.8.4
+python-socketio==5.16.2
 
 pytz==2017.3
 singledispatch
